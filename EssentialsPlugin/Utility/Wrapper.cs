@@ -68,9 +68,10 @@
 		{
 			try
 			{
-				if (methodName == null || methodName.Length == 0)
-					throw new Exception("Method name was empty");
+                if (string.IsNullOrEmpty( methodName ))
+                    throw new Exception("Method name was empty");
 				MethodInfo method = objectType.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+
 				if (method == null)
 				{
 					//Recurse up through the class heirarchy to try to find the method
@@ -104,10 +105,11 @@
 				if (argTypes == null || argTypes.Length == 0)
 					return GetStaticMethod(objectType, methodName);
 
-				if (methodName == null || methodName.Length == 0)
+				if (string.IsNullOrEmpty( methodName ))
 					throw new Exception("Method name was empty");
 				MethodInfo method = objectType.GetMethod(methodName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.FlattenHierarchy, Type.DefaultBinder, argTypes, null);
-				if (method == null)
+
+                if (method == null)
 				{
 					//Recurse up through the class heirarchy to try to find the method
 					Type type = objectType;
@@ -120,10 +122,12 @@
 						type = type.BaseType;
 					}
 				}
+
 				if (method == null)
 					throw new Exception("Method not found");
 				return method;
 			}
+
 			catch (Exception ex)
 			{
 				Log.Info("Failed to get static method '" + methodName + "'");
@@ -139,9 +143,11 @@
 			{
 				if (gameEntity == null)
 					throw new Exception("Game entity was null");
-				if (methodName == null || methodName.Length == 0)
-					throw new Exception("Method name was empty");
+
+                if (string.IsNullOrEmpty( methodName ))
+                    throw new Exception("Method name was empty");
 				MethodInfo method = gameEntity.GetType().GetMethod(methodName);
+
 				if (method == null)
 				{
 					//Recurse up through the class heirarchy to try to find the method
@@ -177,8 +183,9 @@
 
 				if (gameEntity == null)
 					throw new Exception("Game entity was null");
-				if (methodName == null || methodName.Length == 0)
-					throw new Exception("Method name was empty");
+				if (string.IsNullOrEmpty(methodName))
+                    throw new Exception("Method name was empty");
+
 				MethodInfo method = gameEntity.GetType().GetMethod(methodName, argTypes);
 				if (method == null)
 				{

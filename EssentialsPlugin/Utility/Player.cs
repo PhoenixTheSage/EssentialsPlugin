@@ -274,8 +274,10 @@
 			{
 				if (gameEntity == null)
 					throw new Exception("Game entity was null");
-				if (methodName == null || methodName.Length == 0)
+
+				if (string.IsNullOrEmpty( methodName ))
 					throw new Exception("Method name was empty");
+
 				MethodInfo method = gameEntity.GetType().GetMethod(methodName);
 				if (method == null)
 				{
@@ -310,8 +312,10 @@
 
 				if (gameEntity == null)
 					throw new Exception("Game entity was null");
-				if (methodName == null || methodName.Length == 0)
-					throw new Exception("Method name was empty");
+
+                if (string.IsNullOrEmpty( methodName ))
+                    throw new Exception("Method name was empty");
+
 				MethodInfo method = gameEntity.GetType().GetMethod(methodName, argTypes);
 				if (method == null)
 				{
