@@ -27,6 +27,7 @@
         private bool _serverUtilityGridsShowCoords;
         private bool _serverRespawnMenuOverride;
         private bool _stopShipsOnStart;
+        private bool _promotedAdminCommands;
 
         private string _serverChatName;
         private bool _factionChatPrefix;
@@ -78,24 +79,20 @@
         private int _dockingShipsPerZone;
 
         private bool _dynamicConcealEnabled;
-        private int _dynamicConcealUpdateSpeed;
         private float _dynamicConcealDistance;
         private bool _dynamicConcealIncludeLargeGrids;
+        private bool _dynamicConcealIncludeStations;
         private string[] _dynamicConcealIgnoreSubTypeList = { };
         private bool _dynamicConcealIncludeMedBays;
         private bool _dynamicShowMessages;
         private bool _dynamicConcealPirates;
+        private bool _dynamicConcealPhysics;
+        private bool _dynamicConcealProduction;
         private bool _dynamicTurretManagementEnabled;
         private int _dynamicTurretTargetDistance;
         private bool _dynamicTurretAllowExemption;
         private bool _dynamicBlockManagementEnabled;
         private DynamicTurretManagementMode _mDynamicTurretManagementMode;
-        private bool _dynamicVoxelManagementEnabled;
-        private int _dynamicVoxelDistance;
-
-        private bool _dynamicConcealServerOnly;
-        private bool _dynamicClientConcealEnabled;
-        private float _dynamicClientConcealDistance;
 
         private bool _waypointsEnabled;
         private int _waypointsMaxPerPlayer;
@@ -111,6 +108,10 @@
         private bool _blockEnforcementEnabled;
         private MTObservableCollection<SettingsBlockEnforcementItem> _blockEnforcementItems;
 
+        private bool _playerBlockEnforcementEnabled;
+        private MTObservableCollection<SettingsBlockEnforcementItem> _playerBlockEnforcementItems;
+        private bool _changeBlockOwnerNearest;
+
         private bool _gameModeConquestEnabled;
 
         private bool _reservedSlotsEnabled;
@@ -120,11 +121,13 @@
         private bool _reservedSlotsAdmins;
 
 	    private bool _timedCommandsEnabled;
-	    private MTObservableCollection<TimedCommandItem> _TimedCommandsItem;
+	    private MTObservableCollection<TimedCommandItem> _timedCommandsItem;
 
-	    private bool _cargoShipsEnabled;
-	    private float _cargoShipSpawnTime;
+	    private bool _atmosphericCargoShipsEnabled;
+	    private float _atmosphericCargoShipSpawnTime;
 
+        private List<TicketPlayerItem> _ticketPlayers; 
+        
         private bool _timeOfDayOverride;
         private TimeOfDay _timeOfDayType;
         private float _timeOfDay;
@@ -177,6 +180,16 @@
             {
                 _stopShipsOnStart = value;
                 Save();
+            }
+        }
+
+        public bool PromotedAdminCommands
+        {
+            get { return _promotedAdminCommands; }
+            set
+            {
+                _promotedAdminCommands = value;
+                Save( );
             }
         }
 
@@ -611,19 +624,6 @@
             }
         }
 
-        public int DynamicConcealUpdateSpeed
-        {
-            get
-            {
-                return _dynamicConcealUpdateSpeed;
-            }
-            set
-            {
-                _dynamicConcealUpdateSpeed = value;
-                Save( );
-            }
-        }
-
         public bool DynamicConcealPirates
         {
             get
@@ -637,11 +637,31 @@
             }
         }
 
+        public bool DynamicConcealPhysics
+		{
+            get {return _dynamicConcealPhysics;}
+			set
+			{
+                _dynamicConcealPhysics = value;
+				Save();
+			}
+		}
+
+        public bool DynamicConcealProduction 
+		{
+            get { return _dynamicConcealProduction; }
+			set 
+			{ 
+                _dynamicConcealProduction = value;
+				Save();
+			}
+		}
+
         public float DynamicConcealDistance
 		{
 			get { return _dynamicConcealDistance; }
-			set
-			{
+			set 
+			{ 
 				_dynamicConcealDistance = value;
 				Save();
 			}
@@ -653,6 +673,16 @@
 			set 
 			{ 
 				_dynamicConcealIncludeLargeGrids = value;
+				Save();
+			}
+		}
+
+        public bool ConcealIncludeStations
+		{
+            get { return _dynamicConcealIncludeStations; }
+			set 
+			{ 
+                _dynamicConcealIncludeStations = value;
 				Save();
 			}
 		}
@@ -673,36 +703,6 @@
 			set 
 			{ 
 				_dynamicConcealIncludeMedBays = value;
-				Save();
-			}
-		}
-
-		public bool DynamicConcealServerOnly
-		{
-			get { return _dynamicConcealServerOnly; }
-			set 
-			{ 
-				_dynamicConcealServerOnly = value;
-				Save();
-			}
-		}
-
-		public bool DynamicClientConcealEnabled
-		{
-			get { return _dynamicClientConcealEnabled; }
-			set 
-			{ 
-				_dynamicClientConcealEnabled = value;
-				Save();
-			}
-		}
-
-		public float DynamicClientConcealDistance
-		{
-			get { return _dynamicClientConcealDistance; }
-			set 
-			{ 
-				_dynamicClientConcealDistance = value;
 				Save();
 			}
 		}
@@ -757,26 +757,6 @@
 				Save();
 			}
 		}
-
-        public bool DynamicVoxelManagementEnabled
-        {
-            get { return _dynamicVoxelManagementEnabled; }
-            set
-            {
-                _dynamicVoxelManagementEnabled = value;
-                Save();
-            }
-        }
-
-        public int DynamicVoxelDistance
-        {
-            get { return _dynamicVoxelDistance; }
-            set
-            {
-                _dynamicVoxelDistance = value;
-                Save();
-            }
-        }
 
 		public bool DynamicBlockManagementEnabled
 		{
@@ -891,6 +871,38 @@
             }
 		}
 
+        public bool PlayerBlockEnforcementEnabled
+        {
+            get { return _playerBlockEnforcementEnabled; }
+            set
+            {
+                _playerBlockEnforcementEnabled = value;
+                if(value)
+                    PlayerBlockEnforcement.Init();
+                Save();
+            }
+        }
+
+        public bool PlayerBlockEnforcementChangeOwner
+        {
+            get { return _changeBlockOwnerNearest; }
+            set
+            {
+                _changeBlockOwnerNearest = value;
+                Save();
+            }
+        }
+
+        public MTObservableCollection<SettingsBlockEnforcementItem> PlayerBlockEnforcementItems
+        {
+            get { return _playerBlockEnforcementItems; }
+            set
+            {
+                _playerBlockEnforcementItems = value;
+                Save();
+            }
+        }
+
 		public bool GameModeConquestEnabled
 		{
 			get { return _gameModeConquestEnabled; }
@@ -984,30 +996,30 @@
 
 	    public MTObservableCollection<TimedCommandItem> TimedCommandsItems
 	    {
-	        get { return _TimedCommandsItem; }
+	        get { return _timedCommandsItem; }
 	        set
 	        {
-	            _TimedCommandsItem = value;
+	            _timedCommandsItem = value;
 	            Save(  );
 	        }
 	    }
 
-	    public bool CargoShipsEnabled
+	    public bool AtmosphericCargoShipsEnabled
 	    {
-	        get { return _cargoShipsEnabled; }
+	        get { return _atmosphericCargoShipsEnabled; }
 	        set
 	        {
-	            _cargoShipsEnabled = value;
+	            _atmosphericCargoShipsEnabled = value;
 	            Save( );
 	        }
 	    }
 
-	    public float CargoShipSpawnTime
+	    public float AtmosphericCargoShipSpawnTime
 	    {
-	        get { return _cargoShipSpawnTime; }
+	        get { return _atmosphericCargoShipSpawnTime; }
 	        set
 	        {
-	            _cargoShipSpawnTime = value;
+	            _atmosphericCargoShipSpawnTime = value;
 	            Save( );
 	        }
 	    }
@@ -1029,6 +1041,19 @@
             {
                 _timeOfDayOverride = value;
                 Save();
+            }
+        }
+
+        public List<TicketPlayerItem> TicketPlayers
+        {
+            get
+                {
+                    return _ticketPlayers;
+                }
+            set
+            {
+                _ticketPlayers = value;
+                Save(  );
             }
         }
         #endregion
@@ -1063,6 +1088,7 @@
             _reservedSlotsAdmins = false;
 
             _stopShipsOnStart = false;
+            _promotedAdminCommands = false;
 
             _serverChatName = "Server";
             _factionChatPrefix = true;
@@ -1073,14 +1099,13 @@
 
 			_greetingMessage = "";
 
-            _dynamicConcealUpdateSpeed = 500;
 			_dynamicConcealDistance = 8000;
             _dynamicConcealPirates = false;
+            _dynamicConcealPhysics = false;
+            _dynamicConcealProduction = true;
             _dynamicShowMessages = false;
 			_dynamicTurretTargetDistance = 2000;
 			_dynamicTurretManagementEnabled = false;
-            _dynamicVoxelManagementEnabled = false;
-            _dynamicVoxelDistance = 20000;
 
 			_dockingShipsPerZone = 1;
 
@@ -1101,14 +1126,17 @@
 			_blockEnforcementItems = new MTObservableCollection<SettingsBlockEnforcementItem>();
 			_blockEnforcementItems.CollectionChanged += ItemsCollectionChanged;
 
+            _playerBlockEnforcementItems = new MTObservableCollection<SettingsBlockEnforcementItem>();
+            _playerBlockEnforcementItems.CollectionChanged += ItemsCollectionChanged;
+
             _timedCommandsEnabled = false;
-            _TimedCommandsItem = new MTObservableCollection<TimedCommandItem>(  );
-            _TimedCommandsItem.CollectionChanged += ItemsCollectionChanged;
+            _timedCommandsItem = new MTObservableCollection<TimedCommandItem>(  );
+            _timedCommandsItem.CollectionChanged += ItemsCollectionChanged;
 
-            _cargoShipsEnabled = false;
-            _cargoShipSpawnTime = 10.0f;
-
+            _atmosphericCargoShipsEnabled = false;
+            _atmosphericCargoShipSpawnTime = 10.0f;
             
+            _ticketPlayers = new List<TicketPlayerItem>();
 		}
 
 

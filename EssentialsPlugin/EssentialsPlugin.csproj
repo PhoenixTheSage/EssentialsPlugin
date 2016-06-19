@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>EssentialsPlugin</RootNamespace>
     <AssemblyName>Essentials</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -82,8 +82,8 @@
     <Compile Include="ChatHandlers\Admin\HandleAdminSpeed.cs" />
     <Compile Include="ChatHandlers\Admin\HandleAdminIdentityCleanup.cs" />
     <Compile Include="ChatHandlers\Admin\HandleAdminSpawnCargo.cs" />
-    <Compile Include="ChatHandlers\Admin\HandleAdminTime.cs" />
     <Compile Include="ChatHandlers\Admin\HandleAdminVersion.cs" />
+    <Compile Include="ChatHandlers\HandleRevoke.cs" />
     <Compile Include="ChatHandlers\HandleLastSeen.cs" />
     <Compile Include="ChatHandlers\Settings\HandleSettingsEnableBlockEnforcement.cs" />
     <Compile Include="ChatHandlers\Settings\HandleSettingsGetBlockEnforcement.cs" />
@@ -118,8 +118,11 @@
     <Compile Include="ChatHandlers\AdminScan\HandleAdminScanAreaAt.cs" />
     <Compile Include="ChatHandlers\AdminMove\HandleAdminMoveAreaToPosition.cs" />
     <Compile Include="ChatHandlers\HandleMotd.cs" />
+    <Compile Include="ChatHandlers\Ticket\HandleTicketExtend.cs" />
+    <Compile Include="ChatHandlers\Ticket\HandleTicketRemove.cs" />
+    <Compile Include="ChatHandlers\Ticket\HandleTicketAdd.cs" />
+    <Compile Include="ChatHandlers\Ticket\HandleTicketTimeleft.cs" />
     <Compile Include="ChatHandlers\Utility\HandleUtilityGridsCompare.cs" />
-    <Compile Include="ChatHandlers\Utility\HandleUtilityGridsRefresh.cs" />
     <Compile Include="ChatHandlers\Waypoints\HandleWaypointFactionRemove.cs" />
     <Compile Include="ChatHandlers\Waypoints\HandleWaypointFactionAdd.cs" />
     <Compile Include="ChatHandlers\Waypoints\HandleWaypointGroupRemove.cs" />
@@ -137,13 +140,10 @@
     <Compile Include="ChatHandlers\HandleInfo.cs" />
     <Compile Include="ChatHandlers\Utility\HandleUtilityGridsList.cs" />
     <Compile Include="ChatHandlers\Utility\HandleUtilityExportServer.cs" />
-    <Compile Include="EntityManagers\VoxelManagement.cs" />
     <Compile Include="Essentials.cs" />
     <Compile Include="EntityManagers\BlockManagement.cs" />
     <Compile Include="EntityManagers\TurretManagement.cs" />
-    <Compile Include="GameModes\CaptureTheFlag.cs" />
     <Compile Include="GameModes\Conquest.cs" />
-    <Compile Include="GameModes\KingOfTheHill.cs" />
     <Compile Include="ProcessHandlers\ProcessTicket.cs" />
     <Compile Include="ProcessHandlers\ProcessPlayerCleanup.cs" />
     <Compile Include="ProcessHandlers\ProcessCargoShips.cs" />
@@ -155,12 +155,10 @@
     <Compile Include="ProcessHandlers\ProcessBlocks.cs" />
     <Compile Include="ProcessHandlers\ProcessTimedCommands.cs" />
     <Compile Include="ProcessHandlers\ProcessReservedSlots.cs" />
-    <Compile Include="ProcessHandlers\ProcessTimeOfDay.cs" />
     <Compile Include="ProcessHandlers\ProcessTurrets.cs" />
     <Compile Include="ProcessHandlers\ProcessConquest.cs" />
     <Compile Include="ProcessHandlers\ProcessLoginTracking.cs" />
     <Compile Include="ProcessHandlers\ProcessSpawnShipTracking.cs" />
-    <Compile Include="ProcessHandlers\ProcessVoxels.cs" />
     <Compile Include="ProcessHandlers\ProcessWaypoints.cs" />
     <Compile Include="Properties\Settings.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -169,7 +167,6 @@
     </Compile>
     <Compile Include="Settings\PluginSettings.cs" />
     <Compile Include="ProcessHandlers\ProcessRespawn.cs" />
-    <Compile Include="ProcessHandlers\ProcessNewUserTransport.cs" />
     <Compile Include="ProcessHandlers\ProcessGreeting.cs" />
     <Compile Include="ProcessHandlers\ProcessHandlerBase.cs" />
     <Compile Include="ProcessHandlers\ProcessInfo.cs" />
@@ -190,10 +187,10 @@
     <Compile Include="Settings\SettingsInformationItem.cs" />
     <Compile Include="Settings\SettingsProtectedItem.cs" />
     <Compile Include="Settings\SettingsRestartItem.cs" />
+    <Compile Include="Settings\SettingsTickePlayerItem.cs" />
     <Compile Include="Settings\SettingsRestartNotificationItem.cs" />
     <Compile Include="Settings\SettingsServerWaypointItem.cs" />
     <Compile Include="Settings\SettingsTimedCommandItem.cs" />
-    <Compile Include="Settings\SettingsTimeOfDay.cs" />
     <Compile Include="UtilityClasses\MTObservableCollection.cs" />
     <Compile Include="UtilityClasses\OrientedBoundingBox.cs" />
     <Compile Include="UtilityClasses\SerializeableDictionary.cs" />
@@ -203,6 +200,9 @@
     <Compile Include="Utility\ChatHistory.cs" />
     <Compile Include="Utility\Docking.cs" />
     <Compile Include="Utility\DockingItem.cs" />
+    <Compile Include="Utility\Extensions.cs" />
+    <Compile Include="Utility\GridGroup.cs" />
+    <Compile Include="Utility\PlayerBlockEnforcement.cs" />
     <Compile Include="Utility\Protection.cs" />
     <Compile Include="Utility\TimedEntityCleanup.cs" />
     <Compile Include="Utility\Communication.cs" />
@@ -210,7 +210,6 @@
     <Compile Include="Utility\DockingZone.cs" />
     <Compile Include="Utility\Entity.cs" />
     <Compile Include="EntityManagers\EntityManagement.cs" />
-    <Compile Include="Utility\Faction.cs" />
     <Compile Include="Utility\MathUtility.cs" />
     <Compile Include="Utility\Player.cs" />
     <Compile Include="Utility\Utility.cs" />
@@ -239,7 +238,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="NLog, Version=4.0.0.0, Culture=neutral, PublicKeyToken=5120e14c03d0593c, processorArchitecture=MSIL">
-      <HintPath>..\..\..\Steam\steamapps\common\SpaceEngineersDedicatedServer\DedicatedServer64\NLog.dll</HintPath>
+      <HintPath>..\packages\NLog.4.1.2\lib\net45\NLog.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Sandbox.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -252,15 +251,15 @@
     </Reference>
     <Reference Include="SEModAPI, Version=1.74.10.278, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Steam\steamapps\common\SpaceEngineersDedicatedServer\DedicatedServer64\SEModAPI.dll</HintPath>
+      <HintPath>..\..\SEServerExtender\SEModAPI\bin\x64\Debug\SEModAPI.dll</HintPath>
     </Reference>
     <Reference Include="SEModAPIExtensions, Version=1.74.10.237, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Steam\steamapps\common\SpaceEngineersDedicatedServer\DedicatedServer64\SEModAPIExtensions.dll</HintPath>
+      <HintPath>..\..\SEServerExtender\SEModAPIExtensions\bin\x64\Debug\SEModAPIExtensions.dll</HintPath>
     </Reference>
     <Reference Include="SEModAPIInternal, Version=1.74.10.350, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Steam\steamapps\common\SpaceEngineersDedicatedServer\DedicatedServer64\SEModAPIInternal.dll</HintPath>
+      <HintPath>..\..\SEServerExtender\SEModAPIInternal\bin\x64\Debug\SEModAPIInternal.dll</HintPath>
     </Reference>
     <Reference Include="SpaceEngineers.Game, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
@@ -268,11 +267,11 @@
     </Reference>
     <Reference Include="SpaceEngineers.ObjectBuilders, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Steam\steamapps\common\SpaceEngineersDedicatedServer\DedicatedServer64\SpaceEngineers.ObjectBuilders.dll</HintPath>
+      <HintPath>..\..\SEServerExtender\SEServerExtender\bin\x64\Debug\SpaceEngineers.ObjectBuilders.dll</HintPath>
     </Reference>
     <Reference Include="SpaceEngineers.ObjectBuilders.XmlSerializers, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\Steam\steamapps\common\SpaceEngineers\Bin\SpaceEngineers.ObjectBuilders.XmlSerializers.dll</HintPath>
+      <HintPath>..\..\SEServerExtender\SEServerExtender\bin\x64\Debug\SpaceEngineers.ObjectBuilders.XmlSerializers.dll</HintPath>
     </Reference>
     <Reference Include="SteamSDK, Version=0.0.0.0, Culture=neutral, processorArchitecture=AMD64">
       <SpecificVersion>False</SpecificVersion>
@@ -316,7 +315,8 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>copy /Y D:\GitHub\EssentialsPlugin\EssentialsPlugin\bin\x64\Debug\Essentials.dll C:\ProgramData\SpaceEngineersDedicated\SESE_Test\Mods\Essentials</PostBuildEvent>
+    <PostBuildEvent>copy /Y E:\GitHub\EssentialsPlugin\EssentialsPlugin\bin\x64\Debug\Essentials.dll "c:\programdata\SpaceEngineersDedicated\SESEDevTest\Mods\Essentials"
+copy /Y E:\GitHub\EssentialsPlugin\EssentialsPlugin\bin\x64\Debug\Essentials.dll "C:\ProgramData\SpaceEngineersDedicated\OGG Roids Jan29\Mods\Essentials"</PostBuildEvent>
   </PropertyGroup>
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">

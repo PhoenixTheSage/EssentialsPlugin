@@ -11,18 +11,18 @@
     using System.Runtime.InteropServices;
     using System.Threading;
     using System.Windows.Forms.Design;
-    using EssentialsPlugin.ChatHandlers;
-    using EssentialsPlugin.ChatHandlers.Admin;
-    using EssentialsPlugin.ChatHandlers.AdminConceal;
-    using EssentialsPlugin.ChatHandlers.AdminDelete;
-    using EssentialsPlugin.ChatHandlers.AdminScan;
-    using EssentialsPlugin.ChatHandlers.Dock;
-    using EssentialsPlugin.ChatHandlers.Waypoints;
-    using EssentialsPlugin.ChatHandlers.Settings;
-    using EssentialsPlugin.ProcessHandlers;
-    using EssentialsPlugin.Settings;
-    using EssentialsPlugin.Utility;
-    using EssentialsPlugin.UtilityClasses;
+    using ChatHandlers;
+    using ChatHandlers.Admin;
+    using ChatHandlers.AdminConceal;
+    using ChatHandlers.AdminDelete;
+    using ChatHandlers.AdminScan;
+    using ChatHandlers.Dock;
+    using ChatHandlers.Waypoints;
+    using ChatHandlers.Settings;
+    using ProcessHandlers;
+    using Settings;
+    using Utility;
+    using UtilityClasses;
     using NLog;
     using Sandbox.ModAPI;
     using SEModAPI.API.Utility;
@@ -35,7 +35,7 @@
     using SEModAPIInternal.API.Entity.Sector.SectorObject.CubeGrid;
     using VRage.ModAPI;
     using System.Diagnostics;
-    using System.Text;
+
     public class Essentials : IPlugin, IChatEventHandler, IPlayerEventHandler, ICubeGridHandler, ICubeBlockEventHandler, ISectorEventHandler
     {
         public static Logger Log;
@@ -129,6 +129,19 @@
             set
             {
                 PluginSettings.Instance.StopShipsOnStart = value;
+            }
+        }
+
+        [Category("General")]
+        [Description("Promoted (Space Master) players can use admin chat commands")]
+        [Browsable(true)]
+        [ReadOnly(false)]
+        public bool PromotedAdminCommands
+        {
+            get { return PluginSettings.Instance.PromotedAdminCommands; }
+            set
+            {
+                PluginSettings.Instance.PromotedAdminCommands = value;
             }
         }
 
@@ -620,23 +633,6 @@
         }
 
         [Category( "Dynamic Entity Management" )]
-        [DisplayName( "UpdateTime" )]
-        [Description( "How often, in milliseconds, Essentials will process the list of entities to be concealed or revealed." )]
-        [Browsable( true )]
-        [ReadOnly( false )]
-        public int DynamicConcealUpdateSpeed
-        {
-            get
-            {
-                return PluginSettings.Instance.DynamicConcealUpdateSpeed;
-            }
-            set
-            {
-                PluginSettings.Instance.DynamicConcealUpdateSpeed = value;
-            }
-        }
-
-        [Category( "Dynamic Entity Management" )]
         [DisplayName( "ConcealPirates" )]
         [Description( "Concealing grids owned by pirates can cause problems with drones and cargo ships." )]
         [Browsable( true )]
@@ -650,6 +646,23 @@
             set
             {
                 PluginSettings.Instance.DynamicConcealPirates = value;
+            }
+        }
+
+        [Category("Dynamic Entity Management")]
+        [DisplayName("ConcealPhysics")]
+        [Description("Setting this option will turn off physics on concealed grids.")]
+        [Browsable(true)]
+        [ReadOnly(false)]
+        public bool DynamicConcealPhysics
+        {
+            get
+            {
+                return PluginSettings.Instance.DynamicConcealPhysics;
+            }
+            set
+            {
+                PluginSettings.Instance.DynamicConcealPhysics = value;
             }
         }
 
@@ -675,6 +688,17 @@
             set { PluginSettings.Instance.ConcealIncludeLargeGrids = value; }
         }
 
+        [Category("Dynamic Entity Management")]
+        [DisplayName("Include Stations")]
+        [Description("Enable / Disable management of stations, independent of other large block grids.")]
+        [Browsable(true)]
+        [ReadOnly(false)]
+        public bool DynamicConcealIncludeStations
+        {
+            get { return PluginSettings.Instance.ConcealIncludeStations; }
+            set { PluginSettings.Instance.ConcealIncludeStations = value; }
+        }
+
         [Category( "Dynamic Entity Management" )]
         [DisplayName( "Block Subtype Ignore List" )]
         [Description( "The list of subtype blocks that will make the entity manager ignore a grid.  If a grid contains any of these block subtypes, it will automatically not include it when deciding whether to conceal the grid or not" )]
@@ -688,7 +712,7 @@
 
         [Category( "Dynamic Entity Management" )]
         [DisplayName( "Include MedBays" )]
-        [Description( "The list of subtype blocks that will make the entity manager ignore a grid.  If a grid contains any of these block subtypes, it will automatically not include it when deciding whether to conceal the grid or not" )]
+        [Description( "If any online player has access to a working medbay on a grid, it will be ignored." )]
         [Browsable( true )]
         [ReadOnly( false )]
         public bool DynamicConcealIncludeMedBays
@@ -697,47 +721,18 @@
             set { PluginSettings.Instance.DynamicConcealIncludeMedBays = value; }
         }
 
-        /*  Experiments not working yet */
-        /*
-		[Category("Dynamic Entity Management")]
-		[Description("")]
-		[Browsable(true)]
-		[ReadOnly(false)]
-		public bool DynamicConcealServerOnly
-		{
-			get { return PluginSettings.Instance.DynamicConcealServerOnly; }
-			set
-			{
-				PluginSettings.Instance.DynamicConcealServerOnly = value;
-			}
-		}
 
-		[Category("Dynamic Entity Management")]
-		[Description("")]
-		[Browsable(true)]
-		[ReadOnly(false)]
-		public bool DynamicClientConcealEnabled
-		{
-			get { return PluginSettings.Instance.DynamicClientConcealEnabled; }
-			set
-			{
-				PluginSettings.Instance.DynamicClientConcealEnabled = value;
-			}
-		}
-
-		[Category("Dynamic Entity Management")]
-		[Description("")]
-		[Browsable(true)]
-		[ReadOnly(false)]
-		public float DynamicClientConcealDistance
-		{
-			get { return PluginSettings.Instance.DynamicClientConcealDistance; }
-			set
-			{
-				PluginSettings.Instance.DynamicClientConcealDistance = value;
-			}
-		}
-		/**/
+        [Category("Dynamic Entity Management")]
+        [DisplayName("Include Active Production")]
+        [Description("Ships with active production blocks will be concealed.")]
+        [Browsable(true)]
+        [ReadOnly(false)]
+        public bool DynamicConcealProduction
+        {
+            get { return PluginSettings.Instance.DynamicConcealProduction; }
+            set { PluginSettings.Instance.DynamicConcealProduction = value; }
+        }
+        
         [Category( "Dynamic Entity Management" )]
         [DisplayName( "Log Actions" )]
         [Description( "Enable / Disable console messages that display whether an entity is concealed or revealed.  Should be off if you don't care about seeing how many entities get revealed/concealed." )]
@@ -952,7 +947,7 @@
         }
 
         [Category( "Block Enforcement System" )]
-        [Description( "Enforcement Items.  These are how block enforcements are defined.  Each item is a block that is scanned for." )]
+        [Description( "Enforcement Items. These are how block enforcements are defined. Each item is a block that is scanned for." )]
         [Browsable( true )]
         [ReadOnly( false )]
         public MTObservableCollection<SettingsBlockEnforcementItem> BlockEnforcementItems
@@ -960,6 +955,35 @@
             get { return PluginSettings.Instance.BlockEnforcementItems; }
         }
         
+        [Category("Block Enforcement System")]
+        [Description("This functions like the normal block enforcement, except blocks are counted per player instead of per grid.")]
+        [Browsable(true)]
+        [ReadOnly(false)]
+        public bool PlayerBlockEnforcementEnabled
+        {
+            get { return PluginSettings.Instance.PlayerBlockEnforcementEnabled; }
+            set { PluginSettings.Instance.PlayerBlockEnforcementEnabled = value; }
+        }
+
+        [Category("Block Enforcement System")]
+        [Description("If a block in player enforcement is created with no owner, it will be changed to the nearest player or the owner of the grid if there are no players.")]
+        [Browsable(true)]
+        [ReadOnly(false)]
+        public bool PlayerBlockEnforcementChangeOwner
+        {
+            get { return PluginSettings.Instance.PlayerBlockEnforcementChangeOwner; }
+            set { PluginSettings.Instance.PlayerBlockEnforcementChangeOwner = value; }
+        }
+
+        [Category("Block Enforcement System")]
+        [Description("Enforcement Items. These are how block enforcements are defined. Each item is a block that is scanned for.")]
+        [Browsable(true)]
+        [ReadOnly(false)]
+        public MTObservableCollection<SettingsBlockEnforcementItem> PlayerBlockEnforcementItems
+        {
+            get { return PluginSettings.Instance.PlayerBlockEnforcementItems; }
+        }
+
         [Category( "Reserved Slots" )]
         [Description( "This reserves slots for whitelisted players or groups." )]
         [Browsable( true )]
@@ -1092,15 +1116,15 @@
         }
 
         [Category( "Cargo Ships" )]
-        [Description( "This enables or disables random cargo ships." )]
+        [Description( "This enables or disables cargo ships spawning in gravity." )]
         [Browsable( true )]
         [ReadOnly( false )]
-        public bool CargoShipsEnabled {
+        public bool AtmosphericCargoShipsEnabled {
             get {
-                return PluginSettings.Instance.CargoShipsEnabled;
+                return PluginSettings.Instance.AtmosphericCargoShipsEnabled;
             }
             set {
-                PluginSettings.Instance.CargoShipsEnabled = value;
+                PluginSettings.Instance.AtmosphericCargoShipsEnabled = value;
             }
         }
 
@@ -1108,12 +1132,12 @@
         [Description( "The amount of time, in minutes, between ship spawn." )]
         [Browsable( true )]
         [ReadOnly( false )]
-        public float CargoShipSpawnTime {
+        public float AtmosphericCargoShipSpawnTime {
             get {
-                return PluginSettings.Instance.CargoShipSpawnTime;
+                return PluginSettings.Instance.AtmosphericCargoShipSpawnTime;
             }
             set {
-                PluginSettings.Instance.CargoShipSpawnTime = value;
+                PluginSettings.Instance.AtmosphericCargoShipSpawnTime = value;
             }
         }
         /*
@@ -1146,7 +1170,7 @@
             // Setup process handlers
             _processHandlers = new List<ProcessHandlerBase>
                                {
-                                   new ProcessNewUserTransport( ),
+                                   //new ProcessNewUserTransport( ),
                                    new ProcessGreeting( ),
                                    new ProcessRestart( ),
                                    new ProcessInfo( ),
@@ -1158,11 +1182,11 @@
                                    new ProcessCleanup( ),
                                    new ProcessBlockEnforcement( ),
                                    new ProcessSpawnShipTracking( ),
-                                   new ProcessVoxels(  ),
                                    new ProcessReservedSlots(),
                                    new ProcessTimedCommands(  ),
                                    new ProcessSpeed(  ),
-                                   new ProcessCargoShips(  )
+                                   new ProcessCargoShips(  ),
+                                   new ProcessTicket(  )
                                };
 
             // Setup chat handlers
@@ -1258,7 +1282,6 @@
                                 //Utility
 				                new HandleUtilityExportServer( ),
                                 new HandleUtilityGridsList( ),
-                                new HandleUtilityGridsRefresh( ),
                                 new HandleUtilityGridsCompare( ),
 
                                 //Misc
@@ -1268,7 +1291,14 @@
                                 new HandleMsg( ),
                                 new HandleFaction( ),
                                 new HandleFactionF( ),
-                                new HandleMotd( )
+                                new HandleMotd( ),
+                                new HandleRevoke( ),
+
+                                //Tickets
+                                new HandleTicketAdd(  ),
+                                new HandleTicketExtend(  ),
+                                new HandleTicketRemove(  ),
+                                new HandleTicketTimeleft(  )
                             };
 
             _processThreads = new List<Thread>( );
@@ -1282,7 +1312,10 @@
             
             Protection.Init( );
             ProcessReservedSlots.Init( );
-
+            PlayerBlockEnforcement.Init();
+            
+            MyAPIGateway.Multiplayer.RegisterMessageHandler(9005, Communication.ReceiveMessageParts);
+            MyAPIGateway.Multiplayer.RegisterMessageHandler( 9007, Communication.HandleAddConcealExempt );
             Log.Info( "Plugin '{0}' initialized. (Version: {1}  ID: {2})", Name, Version, Id );
         }
         
@@ -1412,6 +1445,8 @@
                 thread.Abort( );
 
             _processThread.Abort( );
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler(9005, Communication.ReceiveMessageParts);
+            MyAPIGateway.Multiplayer.UnregisterMessageHandler( 9007, Communication.HandleAddConcealExempt );
         }
 
         public void Update( )
@@ -1451,7 +1486,6 @@
 
             if ( obj.Message[0] != '/' )
             {
-                //one day this will work. today is not that day :(
                 //ChatHistory.AddChat( obj );
                 return;
             }
@@ -1468,12 +1502,12 @@
             if (commandParts[0].ToLower() == "/help")
             {
                 //user wants some help
-                if (commandParts.Count > 1 && commandParts[1].ToLower() == "dialog")
-                    HandleHelpDialog(remoteUserId, commandParts);
+                if (commandParts.Count > 1 && commandParts[1].ToLower() == "chat")
+                    HandleHelpCommand(remoteUserId, commandParts);
                 //do we want help in a dialog window?
 
                 else
-                    HandleHelpCommand(remoteUserId, commandParts);
+                    HandleHelpDialog(remoteUserId, commandParts);
 
                 return;
             }

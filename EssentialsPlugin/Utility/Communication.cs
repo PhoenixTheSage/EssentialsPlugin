@@ -17,8 +17,14 @@
     using VRageMath;
     using SEModAPI.API.Definitions;
     using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
+    using Sandbox.Definitions;
+    using Sandbox.Game.Entities;
     using Settings;
+    using VRage.Collections;
     using VRage.Game;
+    using VRage.ModAPI;
 
     public static class Communication
     {
@@ -81,8 +87,7 @@
             chatItem.Message = (from == null ? infoText : ( $"{{whisper}} to {PlayerMap.Instance.GetFastPlayerNameFromSteamId( playerId )}: {infoText}" ));
             ChatManager.Instance.AddChatHistory( chatItem );
         }
-
-        //TODO: Kill PlayerMap
+        
         public static void SendFactionClientMessage( ulong playerSteamId, string message )
         {
             ServerMessageItem MessageItem = new ServerMessageItem( );
@@ -113,12 +118,14 @@
 
         public static void Notification( ulong steamId, MyFontEnum color, int timeInSeconds, string message )
         {
-            ServerNotificationItem MessageItem = new ServerNotificationItem( );
-            MessageItem.color = color;
-            MessageItem.time = timeInSeconds;
-            MessageItem.message = message;
+            ServerNotificationItem messageItem = new ServerNotificationItem
+                                                 {
+                                                     color = color,
+                                                     time = timeInSeconds,
+                                                     message = message
+                                                 };
 
-            string messageString = MyAPIGateway.Utilities.SerializeToXML( MessageItem );
+            string messageString = MyAPIGateway.Utilities.SerializeToXML( messageItem );
             byte[ ] data = Encoding.UTF8.GetBytes( messageString );
 
             if ( steamId != 0 )
@@ -208,13 +215,79 @@
             byte[ ] data = Encoding.UTF8.GetBytes( messageString );
             BroadcastDataMessage( DataMessageType.Waypoint, data );
         }
+        
+        public static void DisableGMenu( ulong steamId, string blockDef, bool subType, bool enable )
+        {
+                var message = Encoding.UTF8.GetBytes( blockDef );
+                byte[] data = new byte[sizeof (bool) * 2 + message.Length];
+                BitConverter.GetBytes( enable ).CopyTo( data, 0 );
+                BitConverter.GetBytes( subType ).CopyTo( data, sizeof (bool) );
+                message.CopyTo( data, sizeof (bool) * 2 );
 
+                SendDataMessage( steamId, DataMessageType.GMenu, data );
+                return;
+            /*
+            DictionaryValuesReader<MyDefinitionId, MyDefinitionBase> allDefs = MyDefinitionManager.Static.GetAllDefinitions();
+            HashSet<MyCubeBlockDefinition> blockDefs = new HashSet<MyCubeBlockDefinition>();
+
+            if ( !subType )
+            {
+                foreach ( MyDefinitionBase definition in allDefs.Where( x => x is MyCubeBlockDefinition ) )
+                {
+                    if ( definition.Id.TypeId.ToString().Contains( blockDef ) )
+                    {
+                        blockDefs.Add( definition as MyCubeBlockDefinition );
+                    }
+                }
+            }
+            else
+            {
+                var message = Encoding.UTF8.GetBytes( blockDef );
+                byte[] data = new byte[sizeof (bool) * 2 + message.Length];
+                BitConverter.GetBytes( enable ).CopyTo( data, 0 );
+                BitConverter.GetBytes( true ).CopyTo( data, sizeof (bool) );
+                message.CopyTo( data, sizeof (bool) * 2 );
+
+                SendDataMessage( steamId, DataMessageType.GMenu, data );
+                return;
+            }
+
+            foreach ( var def in blockDefs )
+            {
+                var message = Encoding.UTF8.GetBytes( def.Id.SubtypeId.ToString() );
+                byte[] data = new byte[sizeof (bool) * 2 + message.Length];
+                BitConverter.GetBytes( enable ).CopyTo( data, 0 );
+                BitConverter.GetBytes( true ).CopyTo( data, sizeof (bool) );
+                message.CopyTo( data, sizeof (bool) * 2 );
+
+                SendDataMessage( steamId, DataMessageType.GMenu, data );
+                Thread.Sleep( 60000 );
+            }
+            */
+        }
+
+        public static void HandleAddConcealExempt( byte[] data )
+        {
+            //this is raised on the game thread which locks up the server for some reason, so run the action in a new thread
+            Task.Run( () =>
+                      {
+                          var subtype = Encoding.UTF8.GetString( data );
+
+                          if ( !PluginSettings.Instance.DynamicConcealIgnoreSubTypeList.Contains( subtype ) )
+                          {
+                              string[] newArray = new string[PluginSettings.Instance.DynamicConcealIgnoreSubTypeList.Length + 1];
+                              PluginSettings.Instance.DynamicConcealIgnoreSubTypeList.CopyTo( newArray, 0 );
+                              newArray[newArray.Length - 1] = subtype;
+                              PluginSettings.Instance.DynamicConcealIgnoreSubTypeList = newArray;
+                          }
+                      } );
+        }
+        
         public static void SendDataMessage( ulong steamId, DataMessageType messageType, byte[ ] data )
         {
-            //this may be unsafe, but whatever, my sanity requires the enum
+            /*
             long msgId = (long)messageType;
 
-            //TODO: Check for max message size of 4kB
             string msgIdString = msgId.ToString( );
             byte[ ] newData = new byte[data.Length + msgIdString.Length + 1];
             newData[0] = (byte)msgIdString.Length;
@@ -222,17 +295,28 @@
                 newData[r + 1] = (byte)msgIdString[r];
 
             Buffer.BlockCopy( data, 0, newData, msgIdString.Length + 1, data.Length );
+            */
+
+            //this is a much more elegant and lightweight method
+            byte[] newData = new byte[sizeof(long) + data.Length];
+            BitConverter.GetBytes((long)messageType).CopyTo( newData, 0 );
+            data.CopyTo( newData, sizeof(long));
+
+            if ( newData.Length > 4096 )
+            {
+                SendMessagePartsTo( steamId, newData );
+                return;
+            }
 
             Wrapper.GameAction( ( ) =>
                                 {
                                     MyAPIGateway.Multiplayer.SendMessageTo( 9000, newData, steamId );
                                 } );
-            //ServerNetworkManager.SendDataMessage( 9000, newData, steamId );
         }
 
         public static void BroadcastDataMessage( DataMessageType messageType, byte[ ] data )
         {
-            //this may be unsafe, but whatever, my sanity requires the enum
+            /*
             long msgId = (long)messageType;
 
             string msgIdString = msgId.ToString( );
@@ -242,6 +326,17 @@
                 newData[r + 1] = (byte)msgIdString[r];
 
             Buffer.BlockCopy( data, 0, newData, msgIdString.Length + 1, data.Length );
+            */
+            
+            byte[] newData = new byte[sizeof(long) + data.Length];
+            BitConverter.GetBytes((long)messageType).CopyTo(newData, 0);
+            data.CopyTo(newData, sizeof(long));
+
+            if (newData.Length > 4096)
+            {
+                BroadcastMessageParts(newData);
+                return;
+            }
 
             Wrapper.GameAction( ( ) =>
                                 {
@@ -249,6 +344,146 @@
                                 } );
         }
 
+        public static void SendMessagePartsTo(ulong steamId, byte[] data)
+        {
+            foreach(var packet in Segment( data ))
+                MyAPIGateway.Multiplayer.SendMessageTo(9006, packet, steamId);
+        }
+
+        public static void BroadcastMessageParts( byte[] data)
+        {
+            foreach (var packet in Segment(data))
+                MyAPIGateway.Multiplayer.SendMessageToOthers(9006, packet);
+        }
+
+        public static void ReceiveMessageParts(byte[] data)
+        {
+            //this is raised on the game thread which can lock up the server, so run the action in a new thread
+            Task.Run( ( ) =>
+                      {
+                          byte[] message = Desegment( data );
+
+                          if(message == null)
+                              return;
+
+                          ulong steamId = BitConverter.ToUInt64( message, 0 );
+                          string chatMessage = Encoding.UTF8.GetString( message, sizeof (ulong), message.Length - sizeof (ulong) );
+                          Essentials.Instance.HandleChatMessage( steamId, chatMessage );
+                      } );
+        }
+
+    private static Dictionary<int, PartialMessage> messages = new Dictionary<int, PartialMessage>();
+    private const int PACKET_SIZE = 4096;
+    private const int META_SIZE = sizeof(int) * 2;
+    private const int DATA_LENGTH = PACKET_SIZE - META_SIZE;
+ 
+    /// <summary>
+    /// Segments a byte array.
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
+    public static List<byte[]> Segment(byte[] message)
+    {
+        var hash = BitConverter.GetBytes(message.GetHashCode());
+        var packets = new List<byte[]>();
+        int msgIndex = 0;
+ 
+        int packetId = message.Length / DATA_LENGTH;
+ 
+        while (packetId >= 0)
+        {
+            var id = BitConverter.GetBytes(packetId);
+            byte[] segment;
+ 
+            if (message.Length - msgIndex > DATA_LENGTH)
+            {
+                segment = new byte[PACKET_SIZE];
+            }
+            else
+            {
+                segment = new byte[META_SIZE + message.Length - msgIndex];
+            }
+ 
+            //Copy packet "header" data.
+            Array.Copy(hash, segment, hash.Length);
+            Array.Copy(id, 0, segment, hash.Length, id.Length);
+ 
+            //Copy segment of original message.
+            Array.Copy(message, msgIndex, segment, META_SIZE, segment.Length - META_SIZE);
+ 
+            packets.Add(segment);
+            msgIndex += DATA_LENGTH;
+            packetId--;
+        }
+ 
+        return packets;
+    }
+ 
+    /// <summary>
+    /// Reassembles a segmented byte array.
+    /// </summary>
+    /// <param name="packet">Array segment.</param>
+    /// <param name="message">Full array, null if incomplete.</param>
+    /// <returns>Message fully desegmented, "message" is assigned.</returns>
+    public static byte[] Desegment(byte[] packet)
+    {
+        int hash = BitConverter.ToInt32(packet, 0);
+        int packetId = BitConverter.ToInt32(packet, sizeof(int));
+        byte[] dataBytes = new byte[packet.Length - META_SIZE];
+        Array.Copy(packet, META_SIZE, dataBytes, 0, packet.Length - META_SIZE);
+ 
+        if (!messages.ContainsKey(hash))
+        {
+            if (packetId == 0)
+            {
+                return dataBytes;
+            }
+            else
+            {
+                messages.Add(hash, new PartialMessage(packetId));
+            }
+        }
+ 
+        var message = messages[hash];
+        message.WritePart(packetId, dataBytes);
+ 
+        if (message.IsComplete)
+        {
+            messages.Remove(hash);
+            return message.Data;
+        }
+ 
+        return null;
+    }
+ 
+    private class PartialMessage
+    {
+        public byte[] Data;
+        private HashSet<int> receivedPackets = new HashSet<int>();
+        private readonly int MaxId;
+        public bool IsComplete { get { return receivedPackets.Count == MaxId + 1; } }
+ 
+ 
+        public PartialMessage(int startId)
+        {
+            MaxId = startId;
+            Data = new byte[0];
+        }
+ 
+        public void WritePart(int id, byte[] data)
+        {
+            int index = MaxId - id;
+            int requiredLength = (index * DATA_LENGTH) + data.Length;
+ 
+            if (Data.Length < requiredLength)
+            {
+                Array.Resize(ref Data, requiredLength);
+            }
+ 
+            Array.Copy(data, 0, Data, index * DATA_LENGTH, data.Length);
+            receivedPackets.Add(id);
+        }
+    }
         public class ServerMessageItem
         {
             public string From
@@ -320,8 +555,8 @@
                 get; set;
             }
         }
-
-        public enum DataMessageType
+        
+        public enum DataMessageType : long
         {
             Test = 5000,
             VoxelHeader,
@@ -339,7 +574,8 @@
             Notification,
             MaxSpeed,
             ServerInfo,
-            Waypoint
+            Waypoint,
+            GMenu
         }
     }
 }

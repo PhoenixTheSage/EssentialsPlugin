@@ -2,8 +2,10 @@
 {
 	using System;
 	using System.Collections.Generic;
+	using System.Linq;
 	using EssentialsPlugin.Settings;
 	using EssentialsPlugin.Utility;
+	using Sandbox.Game.World;
 	using Sandbox.ModAPI;
 	using Sandbox.ModAPI.Ingame;
 	using SEModAPIInternal.API.Common;
@@ -65,6 +67,10 @@
 
 				if ( !entity.InScene )
 					continue;
+
+			    if ( PluginSettings.Instance.ProtectedEnabled && PluginSettings.Instance.ProtectedItems.Any( x => x.EntityId == entity.EntityId ) )
+			        continue;
+			    
 
 				IMyCubeGrid grid = (IMyCubeGrid)entity;
 				//IMyGridTerminalSystem gridTerminal = MyAPIGateway.TerminalActionsHelper.GetTerminalSystemForGrid( grid );
@@ -167,7 +173,7 @@
                         }
                         if ( !foundAdmin )
                         {
-                            foreach ( long playerId in grid.BigOwners )
+                            foreach ( long playerId in grid.SmallOwners )
                             {
                                 ulong steamId = PlayerMap.Instance.GetSteamIdFromPlayerId( playerId );
                                 if ( steamId > 0 )
