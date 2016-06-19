@@ -124,6 +124,10 @@
 
 	    private bool _cargoShipsEnabled;
 	    private float _cargoShipSpawnTime;
+
+        private bool _timeOfDayOverride;
+        private TimeOfDay _timeOfDayType;
+        private float _timeOfDay;
         
         #endregion
 
@@ -443,6 +447,8 @@
 			}
 		}
 
+
+        //New User Transport
 		public bool NewUserTransportEnabled
 		{
 			get { return _newUserTransportEnabled; }
@@ -513,6 +519,8 @@
 			}
 		}
 
+
+        //Login Tracking
 		public bool LoginEnabled
 		{
 			get { return _loginEnabled; }
@@ -548,6 +556,8 @@
 			}
 		}
 
+
+        //Protected Entities
 		public bool ProtectedEnabled
 		{
 			get { return _protectedEnabled; }
@@ -565,6 +575,7 @@
 		}
 
 
+        //Docking Zones
 		public bool DockingEnabled
 		{
 			get { return _dockingEnabled; }
@@ -585,6 +596,8 @@
 			}
 		}
 
+
+        //Entity Concealment
         public bool DynamicConcealEnabled
         {
             get
@@ -998,6 +1011,26 @@
 	            Save( );
 	        }
 	    }
+
+        public bool TimeOfDayOverride
+        {
+            get { return _timeOfDayOverride; }
+            set
+            {
+                _timeOfDayOverride = value;
+                Save();
+            }
+        }
+
+        public bool TimeOfDayOverride
+        {
+            get { return _timeOfDayOverride; }
+            set
+            {
+                _timeOfDayOverride = value;
+                Save();
+            }
+        }
         #endregion
 
         #region Constructor
@@ -1074,6 +1107,7 @@
 
             _cargoShipsEnabled = false;
             _cargoShipSpawnTime = 10.0f;
+
             
 		}
 
@@ -1471,4 +1505,10 @@
 		NeutralAndEnemy,
 		Enemy
 	}
+
+    public enum TimeOfDay
+    {
+        Dynamic,
+        Static
+    }
 }

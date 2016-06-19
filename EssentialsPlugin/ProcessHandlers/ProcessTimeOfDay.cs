@@ -8,14 +8,15 @@ namespace EssentialsPlugin.ProcessHandlers
 {
     class ProcessTimeOfDay : ProcessHandlerBase
     {
-        public override int GetUpdateResolution()
+        public override int GetUpdateResolution( )
         {
             return 1000;
         }
 
-        public override void Handle()
+        public override void Handle( )
         {
             if (!PluginSettings.Instance.TimedCommandsEnabled)
                 return;
         }
+    }
 }
